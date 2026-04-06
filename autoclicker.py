@@ -101,7 +101,7 @@ class AutoClicker:
         settings_frame = ttk.LabelFrame(main_frame, text=" CONFIGURATION ", padding=15)
         settings_frame.pack(fill="x", pady=5)
 
-        ttk.Label(settings_frame, text="Step Delay (ms):").grid(row=0, column=0, sticky="w", padx=5)
+        ttk.Label(settings_frame, text="Default Wait (ms):").grid(row=0, column=0, sticky="w", padx=5)
         self.delay_var = tk.StringVar(value="500")
         ttk.Entry(settings_frame, textvariable=self.delay_var, width=12).grid(row=0, column=1, padx=5, pady=2, sticky="w")
 
@@ -114,7 +114,7 @@ class AutoClicker:
         self.type_combo = ttk.Combobox(settings_frame, textvariable=self.type_var, values=["left", "right", "double", "middle", "mouse4", "mouse5"], width=12, state="readonly")
         self.type_combo.grid(row=0, column=3, padx=5, sticky="w")
 
-        ttk.Label(settings_frame, text="Loop Wait (s):").grid(row=1, column=2, padx=10, sticky="w")
+        ttk.Label(settings_frame, text="Loop Wait (ms):").grid(row=1, column=2, padx=10, sticky="w")
         self.loop_delay_var = tk.StringVar(value="0")
         ttk.Entry(settings_frame, textvariable=self.loop_delay_var, width=12).grid(row=1, column=3, padx=5, sticky="w")
         
@@ -364,7 +364,7 @@ class AutoClicker:
             loops = 1
             
         try:
-            loop_wait = float(self.loop_delay_var.get())
+            loop_wait = float(self.loop_delay_var.get()) / 1000.0
         except ValueError:
             loop_wait = 0
         
@@ -391,6 +391,10 @@ class AutoClicker:
                         # Fallback to recorded absolute coordinates if window lookup fails
                         pass
 
+                # Add miniscule coordinate jitter (±1 pixel) to avoid perfect clicking
+                target_x += random.randint(-1, 1)
+                target_y += random.randint(-1, 1)
+
                 # Map user-friendly names back to PyAutoGUI button names
                 btn_map = {"mouse4": "x1", "mouse5": "x2"}
                 exec_btn = btn_map.get(click_type, click_type)
@@ -399,9 +403,10 @@ class AutoClicker:
                     pyautogui.doubleClick(target_x, target_y)
                 else:
                     pyautogui.click(target_x, target_y, button=exec_btn)
-                    
-                jitter = random.uniform(-0.1, 0.1) * delay_ms
-                time.sleep(max(0, (delay_ms + jitter) / 1000.0))
+
+                # Small random timing jitter (±15ms)
+                time_jitter = random.uniform(-15, 15)
+                time.sleep(max(0, (delay_ms + time_jitter) / 1000.0))
             
             iterations += 1
             if loops > 0 and iterations >= loops:
