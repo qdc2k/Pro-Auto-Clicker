@@ -153,8 +153,10 @@ class AutoClicker:
         self.tree.column("Type", width=70, anchor="center")
         self.tree.column("Mode", width=70, anchor="center")
         self.tree.pack(fill="both", expand=True)
+        self.tree.tag_configure("dragging_item", background="#404040", foreground="#ffffff")
         self.tree.bind("<Double-1>", self.on_double_click)
         self.tree.bind("<ButtonPress-1>", self.on_drag_start)
+        self.tree.bind("<B1-Motion>", self.on_drag_motion)
         self.tree.bind("<ButtonRelease-1>", self.on_drag_stop)
 
         # Controls
@@ -243,9 +245,27 @@ class AutoClicker:
 
     # Drag and Drop functionality
     def on_drag_start(self, event):
-        self._drag_data = self.tree.identify_row(event.y)
+        item = self.tree.identify_row(event.y)
+        if item:
+            self._drag_data = item
+            # Visual feedback: Change cursor to a move icon
+            self.tree.configure(cursor="fleur")
+            # Apply a tag to the dragged item to change its appearance
+            self.tree.item(item, tags=("dragging_item",))
+
+    def on_drag_motion(self, event):
+        if self._drag_data:
+            target = self.tree.identify_row(event.y)
+            if target:
+                # Visual feedback: Highlight the potential drop target
+                self.tree.selection_set(target)
 
     def on_drag_stop(self, event):
+        # Reset cursor back to normal
+        self.tree.configure(cursor="")
+        # Remove the dragging tag from the original item
+        if self._drag_data:
+            self.tree.item(self._drag_data, tags=())
         target = self.tree.identify_row(event.y)
         if target and self._drag_data and target != self._drag_data:
             source_idx = self.tree.index(self._drag_data)
